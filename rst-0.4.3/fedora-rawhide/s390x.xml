@@ -1,0 +1,183 @@
+<?xml version='1.0' encoding='utf8'?>
+<job retention_tag="60days" group="">
+  <whiteboard>{
+  "name": "cki@gitlab:813653389 6.3.0-rc3@mainline.kernel.org s390x",
+  "job_id": "3976435135"
+}</whiteboard>
+  <recipeSet>
+    
+    <recipe ks_meta="redhat_ca_cert harness='restraint restraint-client restraint-rhts beakerlib' selinux=--permissive" kernel_options="" kernel_options_post="">
+      <distroRequires>
+        <distro_arch op="=" value="s390x" />
+        <distro_family op="=" value="Fedorarawhide" />
+        <distro_variant op="=" value="Server" />
+      </distroRequires>
+      <hostRequires>
+        <arch op="=" value="s390x" />
+        <not>
+          <or>
+            <hostname op="like" value="kernelci-%.s390.bos.redhat.com" />
+          </or>
+        </not>
+        <not>
+          <or>
+            <hostname op="like" value="ampere%altra%bos%" />
+          </or>
+        </not>
+        <not>
+          <or>
+            <hostname op="=" value="dell-pe-fc630-02.dell2.lab.eng.bos.redhat.com" />
+            <hostname op="=" value="dell-pem630-01.dell2.lab.eng.bos.redhat.com" />
+            <hostname op="=" value="dell-pem630-02.dell2.lab.eng.bos.redhat.com" />
+            <hostname op="=" value="dell-per630-02.dell2.lab.eng.bos.redhat.com" />
+            <hostname op="=" value="dell-per630-fc-01.dell2.lab.eng.bos.redhat.com" />
+            <hostname op="=" value="dell-per630-fc-03.dell2.lab.eng.bos.redhat.com" />
+            <hostname op="=" value="dell-per640-04.dell2.lab.eng.bos.redhat.com" />
+            <hostname op="=" value="dell-per6415-01.lab2.eng.bos.redhat.com" />
+            <hostname op="=" value="dell-per6415-02.lab2.eng.bos.redhat.com" />
+            <hostname op="=" value="dell-per6415-03.lab2.eng.bos.redhat.com" />
+            <hostname op="=" value="dell-per6415-04.lab2.eng.bos.redhat.com" />
+            <hostname op="=" value="dell-per740-01.lab.eng.pek2.redhat.com" />
+            <hostname op="=" value="dell-per740-03.knqe.lab.eng.bos.redhat.com" />
+            <hostname op="=" value="intel-purley-qat-02.khw1.lab.eng.bos.redhat.com" />
+            <hostname op="=" value="sgi-uv300-03.khw2.lab.eng.bos.redhat.com" />
+            <hostname op="=" value="dell-r640-01.dell2.lab.eng.bos.redhat.com" />
+            <hostname op="=" value="dell-r640-02.dell2.lab.eng.bos.redhat.com" />
+          </or>
+        </not>
+        <not>
+          <or>
+            <hostname op="=" value="gatto-1.tpb.lab.eng.brq.redhat.com" />
+            <hostname op="=" value="lenovo-sr950-01.khw2.lab.eng.bos.redhat.com" />
+            <hostname op="=" value="lenovo-st550-01.ml3.eng.bos.redhat.com" />
+          </or>
+        </not>
+        <not>
+          <or>
+            <hostname op="=" value="gatto-2.tpb.lab.eng.brq.redhat.com" />
+            <hostname op="=" value="dell-per640-05.dell2.lab.eng.bos.redhat.com" />
+          </or>
+        </not>
+        <not>
+          <pool op="=" value="RDMA Machines in RDU Colo Cluster" />
+        </not>
+        <not>
+          <or>
+            <hostname op="=" value="rt-qe-01.lab.eng.brq2.redhat.com" />
+            <hostname op="=" value="rt-qe-02.lab.eng.brq2.redhat.com" />
+            <hostname op="=" value="rt-qe-06.lab.eng.rdu2.redhat.com" />
+            <hostname op="=" value="rt-qe-07.lab.eng.rdu2.redhat.com" />
+            <hostname op="=" value="rt-qe-09.rhts.eng.pek2.redhat.com" />
+            <hostname op="=" value="rt-qe-10.rhts.eng.pek2.redhat.com" />
+          </or>
+        </not>
+        <not>
+          <or>
+            <hostname op="=" value="wsfd-advnetlab149.lab3.eng.bos.redhat.com" />
+            <hostname op="=" value="wsfd-advnetlab150.lab3.eng.bos.redhat.com" />
+          </or>
+        </not>
+        <not>
+          <pool op="=" value="wdat-cki" />
+        </not>
+        <and>
+          <hypervisor op="=" value="" />
+        </and>
+      </hostRequires>
+      <repos>
+	      <repo name="myharness" url="http://download.eng.bos.redhat.com/beakerrepos/harness/Fedorarawhide/"/>
+      </repos>
+      <partitions />
+      <ks_appends>
+        <ks_append>
+%post
+set -x
+sed -i 's/^#DefaultTasksMax.*/DefaultTasksMax=50%/' /etc/systemd/system.conf
+
+
+
+
+# some tests like xfstests and lvm device-mapper create partitions in beaker
+# the tests might change the devices under these partition and that is fine.
+# make sure this doesn't block a machine from booting if the devices are invalid.
+sed -Ei 's/(.*\/mnt\/xfstests\/mnt.* xfs) .*/\1 defaults,nofail 0 0/g' /etc/fstab
+sed -Ei 's/(.*\/mnt\/dmtest\/.* xfs) .*/\1 defaults,nofail 0 0/g' /etc/fstab
+
+%end
+</ks_append>
+        <ks_append>
+%post
+set -x
+LVNAME=$(lvs -o lv_name,vg_name --noheadings | awk '/root/ {print $1}')
+VGNAME=$(lvs -o lv_name,vg_name --noheadings | awk '/root/ {print $NF}')
+lvextend -l +100%FREE /dev/${VGNAME}/${LVNAME}
+xfs_growfs /
+%end
+</ks_append>
+      </ks_appends>
+      <task name="CKI/restraint" role="None">
+        <fetch url="https://gitlab.com/redhat/centos-stream/tests/kernel/kernel-tests/-/archive/main/kernel-tests-main.zip#cki/restraint" />
+        <params>
+          <param name="CKI_ID" value="1" />
+          <param name="CKI_IS_TEST" value="True" />
+          <param name="CKI_NAME" value="CKI/restraint" />
+          <param name="CKI_UNIVERSAL_ID" value="redhat_restraint" />
+          <param name="CKI_WAIVED" value="True" />
+        </params>
+      </task>
+      <task name="SELinux Custom Module Setup" role="None">
+        <fetch url="https://gitlab.com/redhat/centos-stream/tests/kernel/kernel-tests/-/archive/main/kernel-tests-main.zip#distribution/selinux-custom-modules" />
+        <params>
+          <param name="CKI_ID" value="2" />
+          <param name="CKI_IS_TEST" value="True" />
+          <param name="CKI_NAME" value="SELinux Custom Module Setup" />
+          <param name="CKI_UNIVERSAL_ID" value="selinux_custom_module_setup" />
+          <param name="CKI_WAIVED" value="True" />
+        </params>
+      </task>
+      <task name="/distribution/check-install" role="STANDALONE">
+        <fetch url="https://github.com/beaker-project/beaker-core-tasks/archive/master.zip#check-install" />
+        <params>
+          <param name="CKI_IS_TEST" value="False" />
+        </params>
+      </task>
+      <task name="/test/misc/machineinfo">
+        <fetch url="https://gitlab.com/redhat/centos-stream/tests/kernel/kernel-tests/-/archive/main/kernel-tests-main.zip#test/misc/machineinfo" />
+        <params>
+          <param name="CKI_ID" value="3" />
+          <param name="CKI_IS_TEST" value="True" />
+          <param name="CKI_NAME" value="machineinfo" />
+          <param name="CKI_UNIVERSAL_ID" value="machineinfo" />
+          <param name="CKI_WAIVED" value="True" />
+        </params>
+      </task>
+      <task name="Boot test" role="STANDALONE">
+        <fetch url="https://gitlab.com/redhat/centos-stream/tests/kernel/kernel-tests/-/archive/main/kernel-tests-main.zip#distribution/kpkginstall" />
+        <params>
+          <param name="CKI_ID" value="4" />
+          <param name="CKI_IS_TEST" value="True" />
+          <param name="CKI_NAME" value="Boot test" />
+          <param name="CKI_UNIVERSAL_ID" value="boot" />
+          <param name="CKI_MAINTAINERS" value="Bruno Goncalves &lt;bgoncalv@redhat.com&gt; / bgoncalv" />
+          <param name="KPKG_URL" value="https://s3.upshift.redhat.com/DH-PROD-CKI/internal/813653389/s390x/artifacts/kernel-mainline.kernel.org-redhat_813653389-s390x-kernel.tar.gz#package_name=kernel&amp;source_package_name=kernel" />
+          
+          <param name="KILLTIMEOVERRIDE" value="4800" />
+          <param name="CKI_WAIVED" value="False" />
+        </params>
+      </task>
+      <task name="Storage - blktests - blk" role="STANDALONE">
+        <fetch url="https://gitlab.com/redhat/centos-stream/tests/kernel/kernel-tests/-/archive/main/kernel-tests-main.zip#storage/blktests/blk" />
+        <params>
+          <param name="CKI_ID" value="5" />
+          <param name="CKI_IS_TEST" value="True" />
+          <param name="CKI_NAME" value="Storage - blktests - blk" />
+          <param name="CKI_UNIVERSAL_ID" value="blktests" />
+          <param name="CKI_WAIVED" value="False" />
+          <param name="CKI_MAINTAINERS" value="Yi Zhang &lt;yizhan@redhat.com&gt; / yizhanglinux" />
+          <param name="CKI_SELFTESTS_URL" value="" />
+          <param name="KILLTIMEOVERRIDE" value="3600" />
+        </params>
+      </task>
+      </recipe>
+  </recipeSet>
+  </job>
