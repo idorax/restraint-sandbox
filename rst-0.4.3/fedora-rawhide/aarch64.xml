@@ -1,0 +1,45 @@
+<job retention_tag="scratch">
+  <whiteboard>http://download.eng.bos.redhat.com/beakerrepos/harness/Fedorarawhide/ # aarch64 # 003</whiteboard>
+  <recipeSet priority="Normal">
+    <recipe whiteboard="" role="None" ks_meta="redhat_ca_cert harness='restraint-rhts beakerlib restraint-client' selinux=--permissive" kernel_options="acpi=force" kernel_options_post="">
+      <autopick random="false"/>
+      <watchdog panic="ignore"/>
+      <packages/>
+      <ks_appends/>
+      <repos>
+        <repo name="myharness" url="http://download.eng.bos.redhat.com/beakerrepos/harness/Fedorarawhide/"/>
+      </repos>
+      <distroRequires>
+        <and>
+          <distro_family op="=" value="Fedorarawhide"/>
+          <distro_variant op="=" value="Everything"/>
+          <distro_name op="=" value="Fedora-Rawhide-20230315.n.1"/>
+          <distro_arch op="=" value="aarch64"/>
+        </and>
+      </distroRequires>
+      <hostRequires>
+        <system_type value="Machine"/>
+      </hostRequires>
+      <partitions/>
+      <task name="/distribution/check-install" role="STANDALONE"/>
+      <task name="IPMI driver test" role="STANDALONE">
+        <fetch url="https://gitlab.com/redhat/centos-stream/tests/kernel/kernel-tests/-/archive/main/kernel-tests-main.zip#ipmi/stress/driver"/>
+        <params>
+          <param name="CKI_ID" value="5"/>
+          <param name="CKI_IS_TEST" value="True"/>
+          <param name="CKI_NAME" value="IPMI driver test"/>
+          <param name="CKI_UNIVERSAL_ID" value="redhat_ipmi_driver_stress"/>
+          <param name="CKI_WAIVED" value="False"/>
+          <param name="CKI_MAINTAINERS" value="Fendy Tjahjadi &lt;ftjahjad@redhat.com&gt; / ftjahjad"/>
+          <param name="CKI_SELFTESTS_URL" value=""/>
+          <param name="KILLTIMEOVERRIDE" value="3600"/>
+        </params>
+      </task>
+      <task name="/distribution/reservesys" role="STANDALONE">
+        <params>
+          <param name="RESERVETIME" value="43200"/>
+        </params>
+      </task>
+    </recipe>
+  </recipeSet>
+</job>
